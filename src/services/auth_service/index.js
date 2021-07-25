@@ -60,38 +60,38 @@ const getNewTokens = async (userId) => {
 };
 
 const login = async (reqUsername, reqPassword) => {
-    try {
-      const { id, username, confirmed }  = await isValidPassword(reqUsername, reqPassword);
-    //   if (!confirmed) throw new Error("User Not Confirmed")
-        const { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry } = await getNewTokens(id);
-        return { username, accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
-    } catch (err) {
-      console.error(err);
-      throw new Error();
-    }
-  };
+	try {
+		const { id, username, confirmed } = await isValidPassword(reqUsername, reqPassword);
+		//   if (!confirmed) throw new Error("User Not Confirmed")
+		const { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry } = await getNewTokens(id);
+		return { username, accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
+	} catch (err) {
+		console.error(err);
+		throw new Error();
+	}
+};
 
-  const isValidPassword = async (username, password) => {
-    try {
-      const user = await findByUsername(username);
-        const hash = crypto.pbkdf2Sync(password, user.salt, 1000, 64, `sha512`).toString(`hex`);
-        return user.hash === hash ? user : false
-    } catch (err) {
-        console.error(err);
-        throw new Error();
-    }
-  };
+const isValidPassword = async (username, password) => {
+	try {
+		const user = await findByUsername(username);
+		const hash = crypto.pbkdf2Sync(password, user.salt, 1000, 64, `sha512`).toString(`hex`);
+		return user.hash === hash ? user : false;
+	} catch (err) {
+		console.error(err);
+		throw new Error();
+	}
+};
 
-  const findByUsername = async (username) => {
-    try {
-      const user = await models.user.findOne({
-        where: { username },
-      });
-      return user;
-    } catch (err) {
-        console.error(err);
-        throw new Error();
-    }
-  };
+const findByUsername = async (username) => {
+	try {
+		const user = await models.user.findOne({
+			where: { username },
+		});
+		return user;
+	} catch (err) {
+		console.error(err);
+		throw new Error();
+	}
+};
 
 export default { getAllUsers, signup, login };
