@@ -94,4 +94,27 @@ const findByUsername = async (username) => {
 	}
 };
 
-export default { getAllUsers, signup, login };
+const findByAccessToken = async (accessToken) => {
+	try {
+		const user = await models.user.findOne({
+			where: { access_token : accessToken },
+		});
+		return user;
+	} catch (err) {
+		console.error(err);
+		throw new Error();
+	}
+};
+
+const isAccessTokenValid = async ( accessToken ) => {
+    try {
+		const user = await findByAccessToken(accessToken)
+        const now = new Date();
+        return user.access_token_expiry > now ? true : false
+    } catch (err) {
+		console.error(err);
+		throw new Error();
+	}
+}
+
+export default { getAllUsers, signup, login, isAccessTokenValid};
