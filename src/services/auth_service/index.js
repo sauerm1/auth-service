@@ -6,6 +6,18 @@ const getAllUsers = async () => {
 	await models.user.findAll();
 };
 
+const findUserInDB = async (db_column, value) => {
+	try {
+		const user = await models.user.findOne({
+			where: { [db_column]: value },
+		});
+		return user;
+	} catch (err) {
+		console.error(err);
+		throw new Error();
+	}
+};
+
 const signup = async (reqUsername, reqPassword) => {
 	try {
 		const [salt, hash] = setPassword(reqPassword);
@@ -73,7 +85,7 @@ const login = async (reqUsername, reqPassword) => {
 
 const isValidPassword = async (username, password) => {
 	try {
-		const user = await findByUsername(username);
+		const user = await findUserInDB("username", username);
 		const hash = crypto.pbkdf2Sync(password, user.salt, 1000, 64, `sha512`).toString(`hex`);
 		return user.hash === hash ? user : false;
 	} catch (err) {
@@ -82,39 +94,26 @@ const isValidPassword = async (username, password) => {
 	}
 };
 
-const findByUsername = async (username) => {
+const isAccessTokenValid = async (accessToken) => {
 	try {
-		const user = await models.user.findOne({
-			where: { username },
-		});
-		return user;
+		const user = await findUserInDB("access_token", accessToken);
+		const now = new Date();
+		return user.access_token_expiry > now ? true : false;
 	} catch (err) {
 		console.error(err);
 		throw new Error();
 	}
 };
 
-const findByAccessToken = async (accessToken) => {
+const refreshTokens = async (oldRefreshToken) => {
 	try {
-		const user = await models.user.findOne({
-			where: { access_token : accessToken },
-		});
-		return user;
+		const user = await findUserInDB("refresh_token", oldRefreshToken);
+		const { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry } = await getNewTokens(user.id);
+		return { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
 	} catch (err) {
 		console.error(err);
 		throw new Error();
 	}
 };
 
-const isAccessTokenValid = async ( accessToken ) => {
-    try {
-		const user = await findByAccessToken(accessToken)
-        const now = new Date();
-        return user.access_token_expiry > now ? true : false
-    } catch (err) {
-		console.error(err);
-		throw new Error();
-	}
-}
-
-export default { getAllUsers, signup, login, isAccessTokenValid};
+export default { getAllUsers, signup, login, isAccessTokenValid, refreshTokens };

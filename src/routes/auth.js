@@ -39,5 +39,14 @@ router.get("/accesstoken", async (req, res) => {
     }
 })
 
+router.put("/refreshtoken", async (req, res) => {
+    try {
+        const { refreshToken } = req.body
+        const response = await auth.refreshTokens(refreshToken)
+        res.status(200).json(response);
+    } catch {
+        res.status(500).json(err);
+    }
+})
 
 export default router;
