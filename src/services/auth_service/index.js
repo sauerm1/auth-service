@@ -94,11 +94,11 @@ const isValidPassword = async (username, password) => {
 	}
 };
 
-const isAccessTokenValid = async (accessToken) => {
+const getUserIdFromAccessToken = async (accessToken) => {
 	try {
 		const user = await findUserInDB("access_token", accessToken);
 		const now = new Date();
-		return user.access_token_expiry > now ? true : false;
+		return user.access_token_expiry > now ? { id: user.id } : false;
 	} catch (err) {
 		console.error(err);
 		throw new Error();
@@ -116,4 +116,4 @@ const refreshTokens = async (oldRefreshToken) => {
 	}
 };
 
-export default { getAllUsers, signup, login, isAccessTokenValid, refreshTokens };
+export default { getAllUsers, signup, login, getUserIdFromAccessToken, refreshTokens };

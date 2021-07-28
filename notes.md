@@ -1,8 +1,8 @@
 - [x] /health API
 - [x] /signup save username password
 - [x] /login return access/refresh tokens
-- [ ] /validate takes access token, returns user ID
-- [ ] /refresh takes refresh token, returns new refresh/access tokens
+- [x] /validate takes access token, returns user ID
+- [x] /refresh takes refresh token, returns new refresh/access tokens
 - [ ] /help takes email sends forgot password link
 
 
