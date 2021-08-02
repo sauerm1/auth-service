@@ -49,4 +49,14 @@ router.put("/refreshtoken", async (req, res) => {
 	}
 });
 
+router.post("/help", (req, res) => {
+	try {
+		const { email } = req.body;
+		const response = auth.sendHelpEmail(email);
+		res.status(200).json(response);
+	} catch (err) {
+		res.status(500).json(err);
+	}
+});
+
 export default router;

@@ -7,7 +7,7 @@ router.get("/", function (req, res) {
 	res.send("App Healthy");
 });
 
-router.get("/db", async (req, res) => {
+router.get("health/db", async (req, res) => {
 	try {
 		await sequelize.authenticate();
 		console.log("Connection has been established successfully.");

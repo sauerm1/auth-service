@@ -11,20 +11,18 @@ const app = express();
 app.use(cors());
 
 // Built-In Middleware
+// app.use(express.static('public'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 
 sequelize.sync({ force: true }).then(async () => {
   console.log("synced DB")
   return;
 })
 
-
-app.use("/api/health", routes.health);
-app.use("/api/auth", routes.auth);
-
+app.use("/api/v1/health", routes.health);
+app.use("/api/v1/auth", routes.auth);
 
 // app.listen(process.env.PORT, () => console.log(`Listening on ${process.env.BASE_URL}:${process.env.PORT}`));
 const assertDatabaseConnectionOk  = async () => {
@@ -33,8 +31,7 @@ const assertDatabaseConnectionOk  = async () => {
 		await sequelize.authenticate();
 		console.log('Database connection OK!');
 	} catch (error) {
-		console.log('Unable to connect to the database:');
-		console.log(error.message);
+		console.log(`Unable to connect to the database: ${error.message}`);
 		process.exit(1);
 	}
 }

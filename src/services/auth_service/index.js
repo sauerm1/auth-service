@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { models } from "../../models";
+import sendEmail from "../email_service";
 
 const getAllUsers = async () => {
 	await models.user.findAll();
@@ -116,4 +117,15 @@ const refreshTokens = async (oldRefreshToken) => {
 	}
 };
 
-export default { getAllUsers, signup, login, getUserIdFromAccessToken, refreshTokens };
+const sendHelpEmail = (email) => {
+	const emailResponse = sendEmail({
+		from: "youremail@gmail.com",
+		to: email,
+		subject: "Sending Email using Node.js",
+		template: "forgotPassword",
+        variables: {name: "mark"}
+	});
+    return emailResponse;
+};
+
+export default { getAllUsers, signup, login, getUserIdFromAccessToken, refreshTokens, sendHelpEmail };
