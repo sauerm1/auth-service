@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import routes from "./routes";
-import sequelize from './models'
+import db from './db'
 
 const app = express();
 
@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-sequelize.sync({ force: true }).then(async () => {
+db.sync({ force: true }).then(async () => {
   console.log("synced DB")
   return;
 })
@@ -28,7 +28,7 @@ app.use("/api/v1/auth", routes.auth);
 const assertDatabaseConnectionOk  = async () => {
 	console.log(`Checking database connection...`);
 	try {
-		await sequelize.authenticate();
+		await db.authenticate();
 		console.log('Database connection OK!');
 	} catch (error) {
 		console.log(`Unable to connect to the database: ${error.message}`);

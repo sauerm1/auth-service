@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
-import { models } from "../../models";
+import models from "../../models";
 import sendEmail from "../email_service";
 
 const getAllUsers = async () => {
@@ -15,7 +15,7 @@ const findUserInDB = async (db_column, value) => {
 		return user;
 	} catch (err) {
 		console.error(err);
-		throw new Error();
+		return(err);
 	}
 };
 
@@ -32,7 +32,7 @@ const signup = async (reqUsername, reqPassword) => {
 		return { username, accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
 	} catch (err) {
 		console.error(err);
-		throw new Error();
+		return(err);
 	}
 };
 
@@ -68,7 +68,7 @@ const getNewTokens = async (userId) => {
 		return { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
 	} catch (err) {
 		console.error(err);
-		throw new Error();
+		return(err);
 	}
 };
 
@@ -80,7 +80,7 @@ const login = async (reqUsername, reqPassword) => {
 		return { username, accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
 	} catch (err) {
 		console.error(err);
-		throw new Error();
+		return(err);
 	}
 };
 
@@ -91,7 +91,7 @@ const isValidPassword = async (username, password) => {
 		return user.hash === hash ? user : false;
 	} catch (err) {
 		console.error(err);
-		throw new Error();
+		return(err);
 	}
 };
 
@@ -102,7 +102,7 @@ const getUserIdFromAccessToken = async (accessToken) => {
 		return user.access_token_expiry > now ? { id: user.id } : false;
 	} catch (err) {
 		console.error(err);
-		throw new Error();
+		return(err);
 	}
 };
 
@@ -113,7 +113,7 @@ const refreshTokens = async (oldRefreshToken) => {
 		return { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
 	} catch (err) {
 		console.error(err);
-		throw new Error();
+		return(err);
 	}
 };
 
@@ -123,9 +123,9 @@ const sendHelpEmail = (email) => {
 		to: email,
 		subject: "Sending Email using Node.js",
 		template: "forgotPassword",
-        variables: {name: "mark"}
+		variables: { name: "mark" },
 	});
-    return emailResponse;
+	return emailResponse;
 };
 
 export default { getAllUsers, signup, login, getUserIdFromAccessToken, refreshTokens, sendHelpEmail };
