@@ -11,8 +11,8 @@ router.get("/users", async (req, res) => {
 
 router.post("/signup", async (req, res) => {
 	try {
-		const { username, password } = req.body;
-		const response = await auth.signup(username, password);
+		const { email, password, firstName, lastName } = req.body;
+		const response = await auth.signup(email, password, firstName, lastName);
 		res.status(200).json(response);
 	} catch (err) {
 		res.status(500).json(err);
@@ -21,15 +21,15 @@ router.post("/signup", async (req, res) => {
 
 router.post("/login", async (req, res) => {
 	try {
-		const { username, password } = req.body;
-		const response = await auth.login(username, password);
+		const { email, password } = req.body;
+		const response = await auth.login(email, password);
 		res.status(200).json(response);
 	} catch (err) {
 		res.status(500).json(err);
 	}
 });
 
-router.get("/accesstoken", async (req, res) => {
+router.get("/accessToken", async (req, res) => {
 	try {
 		const { accessToken } = req.body;
 		const response = await auth.getUserIdFromAccessToken(accessToken);
@@ -39,7 +39,7 @@ router.get("/accesstoken", async (req, res) => {
 	}
 });
 
-router.put("/refreshtoken", async (req, res) => {
+router.put("/refreshToken", async (req, res) => {
 	try {
 		const { refreshToken } = req.body;
 		const response = await auth.refreshTokens(refreshToken);
@@ -49,10 +49,20 @@ router.put("/refreshtoken", async (req, res) => {
 	}
 });
 
-router.post("/help", (req, res) => {
+router.post("/passwordResetRequest", (req, res) => {
 	try {
 		const { email } = req.body;
-		const response = auth.sendHelpEmail(email);
+		const response = auth.passwordResetRequest(email);
+		res.status(200).json(response);
+	} catch (err) {
+		res.status(500).json(err);
+	}
+});
+
+router.post("/passwordReset", (req, res) => {
+	try {
+		const { passwordResetRequestId, email } = req.body;
+		const response = auth.passwordReset(passwordResetRequestId, email);
 		res.status(200).json(response);
 	} catch (err) {
 		res.status(500).json(err);

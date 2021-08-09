@@ -4,7 +4,7 @@ import db from "../db";
 const router = Router();
 
 router.get("/", function (req, res) {
-	res.send("App Healthy");
+	res.send("Authentication Service Healthy");
 });
 
 router.get("/db", async (req, res) => {

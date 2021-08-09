@@ -15,24 +15,26 @@ const findUserInDB = async (db_column, value) => {
 		return user;
 	} catch (err) {
 		console.error(err);
-		return(err);
+		return err;
 	}
 };
 
-const signup = async (reqUsername, reqPassword) => {
+const signup = async (reqEmail, reqPassword, reqFirstName, reqLastName) => {
 	try {
 		const [salt, hash] = setPassword(reqPassword);
 		const User = await models.user.create({
-			username: reqUsername,
+			email: reqEmail,
+			first_name: reqFirstName,
+			last_name: reqLastName,
 			salt: salt,
 			hash: hash,
 		});
-		const { id, username } = User;
-		const { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry } = await getNewTokens(id);
-		return { username, accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
+		const { id, email } = User;
+		const { accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration } = await getNewTokens(id);
+		return { email, accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration };
 	} catch (err) {
 		console.error(err);
-		return(err);
+		return err;
 	}
 };
 
@@ -46,86 +48,110 @@ const setPassword = (password) => {
 
 const getNewTokens = async (userId) => {
 	try {
-		const ACCESS_TOKEN_EXPIRATION_MINUTES = parseInt(process.env.ACCESS_TOKEN_EXPIRATION_MINUTES);
 		const accessToken = uuidv4();
-		const accessTokenExpiry = new Date();
-		accessTokenExpiry.setMinutes(accessTokenExpiry.getMinutes() + ACCESS_TOKEN_EXPIRATION_MINUTES);
+		const accessTokenExpiration = new Date();
+		accessTokenExpiration.setMinutes(accessTokenExpiration.getMinutes() + parseInt(process.env.ACCESS_TOKEN_EXPIRATION_MINUTES));
 
-		const REFRESH_TOKEN_EXPIRATION_HOURS = parseInt(process.env.REFRESH_TOKEN_EXPIRATION_HOURS);
 		const refreshToken = uuidv4();
-		const refreshTokenExpiry = new Date();
-		refreshTokenExpiry.setHours(refreshTokenExpiry.getHours() + REFRESH_TOKEN_EXPIRATION_HOURS);
+		const refreshTokenExpiration = new Date();
+		refreshTokenExpiration.setHours(refreshTokenExpiration.getHours() + parseInt(process.env.REFRESH_TOKEN_EXPIRATION_HOURS));
 
 		await models.user.update(
 			{
 				access_token: accessToken,
-				access_token_expiry: accessTokenExpiry,
+				access_token_expiration: accessTokenExpiration,
 				refresh_token: refreshToken,
-				refresh_token_expiry: refreshTokenExpiry,
+				refresh_token_expiration: refreshTokenExpiration,
 			},
 			{ where: { id: userId } }
 		);
-		return { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
+		return { accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration };
 	} catch (err) {
 		console.error(err);
-		return(err);
+		return err;
 	}
 };
 
-const login = async (reqUsername, reqPassword) => {
+const login = async (reqEmail, reqPassword) => {
 	try {
-		const { id, username, confirmed } = await isValidPassword(reqUsername, reqPassword);
+		const { id, email, confirmed } = await isValidPassword(reqEmail, reqPassword);
 		//   if (!confirmed) throw new Error("User Not Confirmed")
-		const { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry } = await getNewTokens(id);
-		return { username, accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
+		const { accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration } = await getNewTokens(id);
+		return { email, accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration };
 	} catch (err) {
 		console.error(err);
-		return(err);
+		return err;
 	}
 };
 
-const isValidPassword = async (username, password) => {
+const isValidPassword = async (email, password) => {
 	try {
-		const user = await findUserInDB("username", username);
+		const user = await findUserInDB("email", email);
 		const hash = crypto.pbkdf2Sync(password, user.salt, 1000, 64, `sha512`).toString(`hex`);
 		return user.hash === hash ? user : false;
 	} catch (err) {
 		console.error(err);
-		return(err);
+		return err;
 	}
 };
 
 const getUserIdFromAccessToken = async (accessToken) => {
 	try {
 		const user = await findUserInDB("access_token", accessToken);
+        console.log(user)
 		const now = new Date();
-		return user.access_token_expiry > now ? { id: user.id } : false;
+		return user.access_token_expiration > now ? { id: user.id } : false;
 	} catch (err) {
 		console.error(err);
-		return(err);
+		return err;
 	}
 };
 
 const refreshTokens = async (oldRefreshToken) => {
 	try {
 		const user = await findUserInDB("refresh_token", oldRefreshToken);
-		const { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry } = await getNewTokens(user.id);
-		return { accessToken, accessTokenExpiry, refreshToken, refreshTokenExpiry };
+		const { accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration } = await getNewTokens(user.id);
+		return { accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration };
 	} catch (err) {
 		console.error(err);
-		return(err);
+		return err;
 	}
 };
 
-const sendHelpEmail = (email) => {
-	const emailResponse = sendEmail({
-		from: "youremail@gmail.com",
-		to: email,
-		subject: "Sending Email using Node.js",
-		template: "forgotPassword",
-		variables: { name: "mark" },
-	});
-	return emailResponse;
+const passwordResetRequest = async (email) => {
+	try {
+		const user = await findUserInDB("email", email);
+		const name = user.first_name || user.email.split("@")[0];
+
+		const passwordResetRequestId = uuidv4();
+		const passwordResetRequestExpiration = new Date();
+		passwordResetRequestExpiration.setMinutes(
+			passwordResetRequestExpiration.getMinutes() + parseInt(process.env.FORGOT_PASSWORD_LINK_EXPIRATION_MINUTES)
+		);
+
+		await models.user.update(
+			{
+				forgot_password_link: passwordResetRequestId,
+				forgot_password_expiration: passwordResetRequestExpiration,
+			},
+			{ where: { id: user.id } }
+		);
+
+		const emailResponse = sendEmail({
+			from: `${process.env.EMAIL_USER}`,
+			to: email,
+			subject: "Did someone forget their password 🤔",
+			template: "forgotPassword",
+			variables: {
+				name: name,
+				link: `${process.env.FORGOT_PASSWORD_BASE_URL}${passwordResetRequestId}`,
+			},
+		});
+		return emailResponse;
+	} catch (err) {
+		console.error(err);
+		return err;
+	}
 };
 
-export default { getAllUsers, signup, login, getUserIdFromAccessToken, refreshTokens, sendHelpEmail };
+export default { getAllUsers, signup, login, getUserIdFromAccessToken, refreshTokens, passwordResetRequest };

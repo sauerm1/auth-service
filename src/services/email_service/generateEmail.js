@@ -1,4 +1,4 @@
-const createHTMLTemplate = (template, variables) => {
+const generateEmail = (template, variables) => {
 	const keys = Object.keys(variables);
 	console.log(keys);
 	let html = template;
@@ -11,4 +11,4 @@ const createHTMLTemplate = (template, variables) => {
 	return html;
 };
 
-export default createHTMLTemplate;
+export default generateEmail;

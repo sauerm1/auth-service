@@ -4,6 +4,7 @@
 - [x] /validate takes access token, returns user ID
 - [x] /refresh takes refresh token, returns new refresh/access tokens
 - [ ] /help takes email sends forgot password link
+- [ ] setup https https://nodejs.org/en/knowledge/HTTP/servers/how-to-create-a-HTTPS-server/
 
 
 connect to sqlite DB:

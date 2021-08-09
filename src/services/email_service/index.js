@@ -1,6 +1,5 @@
 import { createTransport } from "nodemailer";
-import createHTMLTemplate from "./createTemplate";
-const path = require("path");
+import generateEmail from "./generateEmail";
 const fs = require("fs");
 
 const sendEmail = ({ from, to, subject, template, variables }) => {
@@ -12,13 +11,13 @@ const sendEmail = ({ from, to, subject, template, variables }) => {
 		},
 	});
 
-	const html = fs.readFileSync(`${__dirname}/email_templates/${fileName}.html`, "utf8");
+	const html = fs.readFileSync(`${__dirname}/email_templates/${template}.html`, "utf8");
 
 	var mailOptions = {
 		from: from,
 		to: to,
 		subject: subject,
-		html: createHTMLTemplate(html, variables),
+		html: generateEmail(html, variables),
 	};
 
 	transporter.sendMail(mailOptions, function (error, info) {
