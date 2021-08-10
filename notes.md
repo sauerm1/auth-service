@@ -3,7 +3,8 @@
 - [x] /login return access/refresh tokens
 - [x] /validate takes access token, returns user ID
 - [x] /refresh takes refresh token, returns new refresh/access tokens
-- [ ] /help takes email sends forgot password link
+- [x] /passwordResetRequest takes email sends forgot password link
+    - [ ] set 5 minute wait time for reset password
 - [ ] setup https https://nodejs.org/en/knowledge/HTTP/servers/how-to-create-a-HTTPS-server/
 
 

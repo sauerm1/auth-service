@@ -49,20 +49,30 @@ router.put("/refreshToken", async (req, res) => {
 	}
 });
 
-router.post("/passwordResetRequest", (req, res) => {
+router.post("/passwordReset/request", async (req, res) => {
 	try {
 		const { email } = req.body;
-		const response = auth.passwordResetRequest(email);
+		const response = await auth.passwordResetRequest(email);
 		res.status(200).json(response);
 	} catch (err) {
 		res.status(500).json(err);
 	}
 });
 
-router.post("/passwordReset", (req, res) => {
+router.get("/passwordReset/getUser", async (req, res) => {
 	try {
-		const { passwordResetRequestId, email } = req.body;
-		const response = auth.passwordReset(passwordResetRequestId, email);
+		const { passwordResetRequestId } = req.body;
+		const response = await auth.getPasswordResetUser(passwordResetRequestId);
+		res.status(200).json(response);
+	} catch (err) {
+		res.status(500).json(err);
+	}
+});
+
+router.put("/passwordReset", async (req, res) => {
+	try {
+		const { passwordResetRequestId, email, password } = req.body;
+		const response = await auth.passwordReset(passwordResetRequestId, email, password);
 		res.status(200).json(response);
 	} catch (err) {
 		res.status(500).json(err);

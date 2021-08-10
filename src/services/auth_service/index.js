@@ -7,21 +7,9 @@ const getAllUsers = async () => {
 	await models.user.findAll();
 };
 
-const findUserInDB = async (db_column, value) => {
-	try {
-		const user = await models.user.findOne({
-			where: { [db_column]: value },
-		});
-		return user;
-	} catch (err) {
-		console.error(err);
-		return err;
-	}
-};
-
 const signup = async (reqEmail, reqPassword, reqFirstName, reqLastName) => {
 	try {
-		const [salt, hash] = setPassword(reqPassword);
+		const { salt, hash } = setPassword(reqPassword);
 		const User = await models.user.create({
 			email: reqEmail,
 			first_name: reqFirstName,
@@ -43,18 +31,22 @@ const setPassword = (password) => {
 	const salt = crypto.randomBytes(16).toString("hex");
 	// Hashing user's salt and password with 1000 iterations,
 	const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, `sha512`).toString(`hex`);
-	return [salt, hash];
+	return { salt, hash };
 };
 
 const getNewTokens = async (userId) => {
 	try {
 		const accessToken = uuidv4();
 		const accessTokenExpiration = new Date();
-		accessTokenExpiration.setMinutes(accessTokenExpiration.getMinutes() + parseInt(process.env.ACCESS_TOKEN_EXPIRATION_MINUTES));
+		accessTokenExpiration.setMinutes(
+			accessTokenExpiration.getMinutes() + parseInt(process.env.ACCESS_TOKEN_EXPIRATION_MINUTES)
+		);
 
 		const refreshToken = uuidv4();
 		const refreshTokenExpiration = new Date();
-		refreshTokenExpiration.setHours(refreshTokenExpiration.getHours() + parseInt(process.env.REFRESH_TOKEN_EXPIRATION_HOURS));
+		refreshTokenExpiration.setHours(
+			refreshTokenExpiration.getHours() + parseInt(process.env.REFRESH_TOKEN_EXPIRATION_HOURS)
+		);
 
 		await models.user.update(
 			{
@@ -86,7 +78,7 @@ const login = async (reqEmail, reqPassword) => {
 
 const isValidPassword = async (email, password) => {
 	try {
-		const user = await findUserInDB("email", email);
+		const user = await models.user.findOne({ where: { email: email } });
 		const hash = crypto.pbkdf2Sync(password, user.salt, 1000, 64, `sha512`).toString(`hex`);
 		return user.hash === hash ? user : false;
 	} catch (err) {
@@ -97,8 +89,8 @@ const isValidPassword = async (email, password) => {
 
 const getUserIdFromAccessToken = async (accessToken) => {
 	try {
-		const user = await findUserInDB("access_token", accessToken);
-        console.log(user)
+		const user = await models.user.findOne({ where: { access_token: accessToken } });
+		console.log(user);
 		const now = new Date();
 		return user.access_token_expiration > now ? { id: user.id } : false;
 	} catch (err) {
@@ -109,7 +101,7 @@ const getUserIdFromAccessToken = async (accessToken) => {
 
 const refreshTokens = async (oldRefreshToken) => {
 	try {
-		const user = await findUserInDB("refresh_token", oldRefreshToken);
+		const user = await models.user.findOne({ where: { refresh_token: oldRefreshToken } });
 		const { accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration } = await getNewTokens(user.id);
 		return { accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration };
 	} catch (err) {
@@ -120,38 +112,79 @@ const refreshTokens = async (oldRefreshToken) => {
 
 const passwordResetRequest = async (email) => {
 	try {
-		const user = await findUserInDB("email", email);
+		const user = await models.user.findOne({ where: { email: email } });
 		const name = user.first_name || user.email.split("@")[0];
-
 		const passwordResetRequestId = uuidv4();
 		const passwordResetRequestExpiration = new Date();
 		passwordResetRequestExpiration.setMinutes(
-			passwordResetRequestExpiration.getMinutes() + parseInt(process.env.FORGOT_PASSWORD_LINK_EXPIRATION_MINUTES)
+			passwordResetRequestExpiration.getMinutes() + parseInt(process.env.PASSWORD_RESET_REQUEST_EXPIRATION_MINUTES)
 		);
-
 		await models.user.update(
 			{
-				forgot_password_link: passwordResetRequestId,
-				forgot_password_expiration: passwordResetRequestExpiration,
+				password_reset_request_id: passwordResetRequestId,
+				password_reset_request_expiration: passwordResetRequestExpiration,
 			},
 			{ where: { id: user.id } }
 		);
-
-		const emailResponse = sendEmail({
+		const sent = sendEmail({
 			from: `${process.env.EMAIL_USER}`,
 			to: email,
 			subject: "Did someone forget their password 🤔",
 			template: "forgotPassword",
 			variables: {
 				name: name,
-				link: `${process.env.FORGOT_PASSWORD_BASE_URL}${passwordResetRequestId}`,
+				link: `${process.env.PASSWORD_RESET_REQUEST_BASE_URL}${passwordResetRequestId}`,
 			},
 		});
-		return emailResponse;
+		return { emailSent: sent };
 	} catch (err) {
 		console.error(err);
 		return err;
 	}
 };
 
-export default { getAllUsers, signup, login, getUserIdFromAccessToken, refreshTokens, passwordResetRequest };
+const getPasswordResetUser = async (passwordResetRequestId) => {
+	try {
+		const user = await models.user.findOne({ where: { password_reset_request_id: passwordResetRequestId } });
+		return { email: user.email };
+	} catch (err) {
+		console.error(err);
+		return err;
+	}
+};
+
+const passwordReset = async (passwordResetRequestId, email, password) => {
+	try {
+		const { salt, hash } = setPassword(password);
+		const user = await models.user.findOne({
+			where: { email: email, password_reset_request_id: passwordResetRequestId },
+		});
+		const success = await models.user.update(
+			{
+				salt: salt,
+				hash: hash,
+			},
+			{
+				where: {
+					email: email,
+					password_reset_request_id: passwordResetRequestId,
+				},
+			}
+		);
+		return success ? { passwordReset: true } : { passwordReset: false };
+	} catch (err) {
+		console.error(err);
+		return err;
+	}
+};
+
+export default {
+	getAllUsers,
+	signup,
+	login,
+	getUserIdFromAccessToken,
+	refreshTokens,
+	passwordResetRequest,
+	getPasswordResetUser,
+	passwordReset,
+};
